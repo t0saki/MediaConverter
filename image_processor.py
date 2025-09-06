@@ -6,7 +6,7 @@ from pathlib import Path
 from utils import run_command
 from metadata_handler import copy_metadata
 
-def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool):
+def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool, speed_preset: int):
     """Converts a single image to AVIF with a fallback to WebP."""
     relative_path = filepath.relative_to(source_dir)
     target_path_avif = (target_dir / relative_path).with_suffix('.avif')
@@ -42,7 +42,7 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         'magick', str(filepath),
         *resize_filter,
         '-quality', str(quality),
-        '-define', 'heic:speed=4', # Speed preset for AVIF/HEIC
+        '-define', f'heic:speed={speed_preset}', # Speed preset for AVIF/HEIC
         '-depth', '10',           # 10-bit for better color
         str(target_path_avif)
     ]

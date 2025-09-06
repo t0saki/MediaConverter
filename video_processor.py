@@ -2,6 +2,7 @@
 
 import logging
 import json
+import re
 from math import sqrt, floor
 from pathlib import Path
 from utils import run_command
@@ -27,7 +28,7 @@ def _get_video_info(filepath: Path) -> dict:
     except (json.JSONDecodeError, KeyError):
         return {}
 
-def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_args: str, max_res: int, delete_original: bool):
+def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_args: str, max_res: int, delete_original: bool, speed_preset: int):
     """Converts a single video file."""
     relative_path = filepath.relative_to(source_dir)
     target_path = (target_dir / relative_path).with_suffix('.mp4')
@@ -51,9 +52,12 @@ def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_arg
         target_height = floor(source_info['height'] * scale_factor / 2) * 2
         scale_filter = ['-vf', f'scale={target_width}:{target_height}']
 
+    # Replace preset value in ffmpeg args with the provided speed preset
+    ffmpeg_args_updated = re.sub(r'-preset \d+', f'-preset {speed_preset}', ffmpeg_args)
+    
     cmd = [
         'ffmpeg', '-y', '-i', str(filepath),
-        *ffmpeg_args.split(),
+        *ffmpeg_args_updated.split(),
         *scale_filter,
         str(target_path)
     ]

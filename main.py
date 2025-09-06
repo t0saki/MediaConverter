@@ -16,8 +16,10 @@ def main():
     
     # Conversion settings
     parser.add_argument("-q", "--quality", type=int, default=75, help="Image quality for AVIF/WebP (0-100). Lower is smaller.")
-    parser.add_argument("-r", "--max-resolution", type=int, default=4032 * 3024, help="Max resolution in pixels (width * height). Files above this will be resized.")
+    parser.add_argument("-r", "--max-resolution", type=int, default=config.DEFAULT_MAX_RESOLUTION, help="Max resolution in pixels (width * height). Files above this will be resized.")
     parser.add_argument("--video-args", type=str, default=config.DEFAULT_VIDEO_ARGS, help="FFmpeg arguments for video conversion.")
+    parser.add_argument("--image-speed", type=int, default=config.DEFAULT_IMAGE_SPEED_PRESET, help="Speed preset for image conversion (0-10, lower is slower but better quality).")
+    parser.add_argument("--video-speed", type=int, default=config.DEFAULT_VIDEO_SPEED_PRESET, help="Speed preset for video conversion (0-13, lower is slower but better quality).")
 
     # Concurrency and file handling
     parser.add_argument("-w", "--max-workers", type=int, default=4, help="Maximum number of parallel threads.")
@@ -42,7 +44,9 @@ def main():
             video_args=args.video_args,
             max_workers=args.max_workers,
             delete_original=args.delete_original,
-            skip_existing=args.skip_existing
+            skip_existing=args.skip_existing,
+            image_speed=args.image_speed,
+            video_speed=args.video_speed
         )
     except KeyboardInterrupt:
         utils.logging.info("\nProcess interrupted by user. Exiting.")
