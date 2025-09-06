@@ -9,6 +9,7 @@ A comprehensive Python tool for converting and compressing images and videos to 
 - **Image Conversion**: Convert images to AVIF format with WebP fallback
 - **Video Conversion**: Convert videos to AV1/Opus format (MP4 container)
 - **Metadata Preservation**: Copy EXIF data and file timestamps
+- **Apple HDR Support**: Convert Apple HDR HEIC files to PQ format
 - **Smart Resizing**: Automatically resize media that exceeds maximum resolution
 - **Parallel Processing**: Multi-threaded conversion for faster processing
 - **Error Handling**: Robust error handling with fallback mechanisms
