@@ -1,5 +1,3 @@
-# media_converter/config.py
-
 # Supported file extensions, case-insensitive
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp', '.heic', '.heif', '.gif', '.tiff', '.tif')
 VIDEO_EXTENSIONS = ('.mp4', '.avi', '.mkv', '.mov', '.mpg', '.mpeg', '.m4v', '.webm', '.ts')

@@ -1,5 +1,3 @@
-# media_converter/processor.py
-
 import logging
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor

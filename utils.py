@@ -1,5 +1,3 @@
-# media_converter/utils.py
-
 import logging
 import shutil
 import subprocess

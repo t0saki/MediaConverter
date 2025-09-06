@@ -1,5 +1,3 @@
-# media_converter/image_processor.py
-
 import logging
 from math import sqrt, floor
 from pathlib import Path

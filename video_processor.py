@@ -1,5 +1,3 @@
-# media_converter/video_processor.py
-
 import logging
 import json
 import re
