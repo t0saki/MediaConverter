@@ -48,7 +48,7 @@ def save_np_array_to_avif(
         "format": "AVIF",
         "color_primaries": color_primaries,
         "transfer_characteristics": transfer_characteristics,
-        "enc_params": {"aom:cpu-used": speed_preset},
+        "enc_params": {"aom:cpu-used": speed_preset, "aom:row-mt": 1},
     }
 
     # Save the image to the specified output path
