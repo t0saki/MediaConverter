@@ -124,7 +124,7 @@ def copy_metadata(source_path: Path, target_path: Path):
         'exiftool', '-charset', 'filename=utf8', '-TagsFromFile', str(source_path), '-all:all',
         '--unsafe', '-overwrite_original', str(target_path)
     ]
-    run_command(cmd_copy_tags)
+    run_command(cmd_copy_tags, verbose=False)
 
     try:
         # 2. Determine the best creation date using the prioritized function
@@ -136,7 +136,7 @@ def copy_metadata(source_path: Path, target_path: Path):
             'exiftool', f'-DateTimeOriginal={date_str}', f'-CreateDate={date_str}',
             f'-ModifyDate={date_str}', '-overwrite_original', str(target_path)
         ]
-        run_command(cmd_set_date)
+        run_command(cmd_set_date, verbose=False)
 
         # 4. Set file system's access and modification times to match the best date
         timestamp = best_date.timestamp()
