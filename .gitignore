@@ -164,3 +164,6 @@ converted/
 *.db
 *.sqlite
 *.sqlite3
+
+# Test scripts
+test_*.py

@@ -18,7 +18,7 @@ Need to transfer the AVIF saving functionality to use pillow's native support fo
 
 # Save HDR image
 def save_np_array_to_avif(
-    np_array, output_path, color_primaries=12, transfer_characteristics=16
+    np_array, output_path, color_primaries=12, transfer_characteristics=16, speed_preset=1
 ):
     """
     Convert a numpy array to a HEIF/AVIF image and save it to the specified output path.
@@ -47,6 +47,7 @@ def save_np_array_to_avif(
         "format": "AVIF",
         "color_primaries": color_primaries,
         "transfer_characteristics": transfer_characteristics,
+        "enc_params": {"aom:cpu-used": speed_preset},
     }
 
     # Save the image to the specified output path
@@ -59,6 +60,7 @@ def convert_apple_hdr_to_avif(
     quality: int = 75,
     target_width: int | None = None,
     target_height: int | None = None,
+    speed_preset: int = 1
 ):
     """
     Convert Apple HDR HEIC image to AVIF format with HDR support, with optional resizing.
@@ -105,14 +107,15 @@ def convert_apple_hdr_to_avif(
                 interpolation=cv2.INTER_LANCZOS4
             )
 
-        print(
-            f"hdr pq np info: shape={hdr_image_pq.shape}, dtype={hdr_image_pq.dtype}, min={np.min(hdr_image_pq)}, max={np.max(hdr_image_pq)}")
+        # print(
+        #     f"hdr pq np info: shape={hdr_image_pq.shape}, dtype={hdr_image_pq.dtype}, min={np.min(hdr_image_pq)}, max={np.max(hdr_image_pq)}")
         # Save as AVIF with HDR metadata
         save_np_array_to_avif(
             hdr_image_pq,
             output_path,
             color_primaries=12,  # P3-D65
-            transfer_characteristics=16  # PQ
+            transfer_characteristics=16,  # PQ
+            speed_preset=speed_preset
         )
 
         return True
@@ -131,7 +134,7 @@ if __name__ == "__main__":
     print(
         f"--- Converting {input_file} to {output_file_original} at original size ---")
     success_original = convert_apple_hdr_to_avif(
-        input_file, output_file_original, quality=20)
+        input_file, output_file_original, quality=50)
     if success_original:
         print("Original size conversion completed successfully!\n")
     else:
@@ -144,7 +147,7 @@ if __name__ == "__main__":
     success_resized = convert_apple_hdr_to_avif(
         input_file,
         output_file_resized,
-        quality=20,
+        quality=50,
         target_width=900,
         target_height=1200
     )
