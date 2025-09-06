@@ -73,9 +73,12 @@ python main.py "D:\MyPictures" "D:\ConvertedMedia" \
 | `-q, --quality` | Image quality (0-100, lower = smaller) | 75 |
 | `-r, --max-resolution` | Max pixels (width*height) before resizing | 4032*3024 |
 | `--video-args` | Custom FFmpeg arguments for video | AV1/Opus preset |
+| `--image-speed` | Speed preset for image conversion (0-10, lower is slower but better quality) | 6 |
+| `--video-speed` | Speed preset for video conversion (0-13, lower is slower but better quality) | 4 |
 | `-w, --max-workers` | Number of parallel threads | 4 |
 | `--delete-original` | Delete original files after conversion | False |
 | `--skip-existing` | Skip files that already exist in target | True |
+| `--keep-apple-hdr` | Convert Apple HDR gain maps to PQ format when converting HEIC files | False |
 | `--log-file` | Path to log file | conversion.log |
 
 ## Project Structure
@@ -116,6 +119,11 @@ python main.py "/mnt/photos" "/mnt/converted" --max-workers 16 --delete-original
 - Metadata (EXIF, timestamps) is copied to converted files
 - Conversion progress is shown with progress bars
 - Detailed logs are written to the specified log file
+- Apple HDR support requires the `--keep-apple-hdr` flag
+
+## Acknowledgments
+
+- Apple HDR conversion functionality based on [hdr-conversion](https://github.com/Jackchou00/hdr-conversion) by Jackchou
 
 ## License
 

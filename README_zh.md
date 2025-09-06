@@ -73,9 +73,12 @@ python main.py "D:\我的图片" "D:\转换后媒体" \
 | `-q, --quality` | 图像质量 (0-100, 值越小文件越小) | 75 |
 | `-r, --max-resolution` | 调整大小前的最大像素数 (宽*高) | 4032*3024 |
 | `--video-args` | 视频转换的自定义FFmpeg参数 | AV1/Opus预设 |
+| `--image-speed` | 图像转换速度预设 (0-10, 值越小速度越慢但质量越好) | 6 |
+| `--video-speed` | 视频转换速度预设 (0-13, 值越小速度越慢但质量越好) | 4 |
 | `-w, --max-workers` | 并行线程数 | 4 |
 | `--delete-original` | 转换成功后删除原文件 | False |
 | `--skip-existing` | 跳过目标目录中已存在的文件 | True |
+| `--keep-apple-hdr` | 转换带有增益图的HEIC文件时转换为PQ格式 | False |
 | `--log-file` | 日志文件路径 | conversion.log |
 
 ## 项目结构
@@ -116,6 +119,11 @@ python main.py "/mnt/照片" "/mnt/转换后" --max-workers 16 --delete-original
 - 元数据（EXIF、时间戳）会被复制到转换后的文件中
 - 转换进度会显示进度条
 - 详细日志会写入指定的日志文件
+- Apple HDR支持需要启用`--keep-apple-hdr`标志
+
+## 致谢
+
+- Apple HDR转换功能基于Jackchou的[hdr-conversion](https://github.com/Jackchou00/hdr-conversion)
 
 ## 许可证
 
