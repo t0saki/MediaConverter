@@ -27,7 +27,7 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
     target_path_avif.parent.mkdir(parents=True, exist_ok=True)
 
     # Get dimensions using ImageMagick's identify
-    cmd_identify = ['identify', '-format', '%wx%h', str(filepath)]
+    cmd_identify = ['magick', 'identify', '-format', '%wx%h', str(filepath)]
     identify_result = run_command(cmd_identify)
     if not identify_result or not identify_result.stdout:
         logging.error(
