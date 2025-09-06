@@ -25,6 +25,7 @@ def main():
     parser.add_argument("-w", "--max-workers", type=int, default=4, help="Maximum number of parallel threads.")
     parser.add_argument("--delete-original", action="store_true", help="Delete original files after successful conversion.")
     parser.add_argument("--skip-existing", action="store_true", default=True, help="Skip files that already exist in the target directory.")
+    parser.add_argument("--keep-apple-hdr", action="store_true", help="Preserve Apple HDR metadata when converting HEIC files with gain maps.")
     
     parser.add_argument("--log-file", type=str, default="conversion.log", help="Path to the log file.")
 
@@ -46,7 +47,8 @@ def main():
             delete_original=args.delete_original,
             skip_existing=args.skip_existing,
             image_speed=args.image_speed,
-            video_speed=args.video_speed
+            video_speed=args.video_speed,
+            keep_apple_hdr=args.keep_apple_hdr
         )
     except KeyboardInterrupt:
         utils.logging.info("\nProcess interrupted by user. Exiting.")

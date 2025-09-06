@@ -5,8 +5,10 @@ from math import sqrt, floor
 from pathlib import Path
 from utils import run_command
 from metadata_handler import copy_metadata
+from hdr_conversion.apple_heic.identify import has_gain_map
+from apple_hdr_avif_utils import convert_apple_hdr_to_avif
 
-def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool, speed_preset: int):
+def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool, speed_preset: int, keep_apple_hdr: bool = False):
     """Converts a single image to AVIF with a fallback to WebP."""
     relative_path = filepath.relative_to(source_dir)
     target_path_avif = (target_dir / relative_path).with_suffix('.avif')
@@ -36,19 +38,46 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         target_width = floor(width * scale_factor / 2) * 2
         target_height = floor(height * scale_factor / 2) * 2
         resize_filter = ['-resize', f'{target_width}x{target_height}']
+    else:
+        target_width, target_height = None, None
 
-    # Build conversion command (use ImageMagick for broad compatibility)
-    cmd = [
-        'magick', str(filepath),
-        *resize_filter,
-        '-quality', str(quality),
-        '-define', f'heic:speed={speed_preset}', # Speed preset for AVIF/HEIC
-        '-depth', '10',           # 10-bit for better color
-        str(target_path_avif)
-    ]
+    success = False
 
-    # Execute conversion
-    if run_command(cmd):
+    # Try Apple HDR conversion if enabled and file has gain map
+    if keep_apple_hdr and filepath.suffix.lower() in ['.heic', '.heif']:
+        try:
+            logging.debug(f"Checking for Apple HDR gain map in {filepath.name}")
+            if has_gain_map(str(filepath)):
+                logging.debug(f"Apple HDR gain map found in {filepath.name}, attempting HDR conversion")
+                
+                # Attempt Apple HDR to AVIF conversion
+                success = convert_apple_hdr_to_avif(
+                    input_path=str(filepath),
+                    output_path=str(target_path_avif),
+                    quality=quality,
+                    target_width=target_width,
+                    target_height=target_height,
+                    speed_preset=speed_preset
+                )
+        except Exception as e:
+            logging.warning(f"Error during Apple HDR conversion for {filepath.name}: {e}")
+            success = False
+
+    if not success:
+        # Build conversion command (use ImageMagick for broad compatibility)
+        cmd = [
+            'magick', str(filepath),
+            *resize_filter,
+            '-quality', str(quality),
+            '-define', f'heic:speed={speed_preset}', # Speed preset for AVIF/HEIC
+            '-depth', '10',           # 10-bit for better color
+            str(target_path_avif)
+        ]
+
+        # Execute conversion
+        success = run_command(cmd)
+
+    if success:
         logging.info(f"Successfully converted {filepath.name} to AVIF")
         copy_metadata(filepath, target_path_avif)
         if delete_original:

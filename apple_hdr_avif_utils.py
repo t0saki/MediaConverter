@@ -7,6 +7,7 @@ from hdr_conversion.utils import pq_eotf_inverse
 from hdr_conversion.apple_heic.color_conversion import apply_gain_map
 from hdr_conversion.apple_heic.get_images import read_base_and_gain_map
 from hdr_conversion.apple_heic.headroom import get_headroom
+from hdr_conversion.apple_heic.identify import has_gain_map
 
 
 """
@@ -155,3 +156,12 @@ if __name__ == "__main__":
         print("Resized conversion completed successfully!")
     else:
         print("Resized conversion failed!")
+
+    # Test has_gain_map function speed
+    print(f"\n--- Testing has_gain_map on {input_file} ---")
+    import time
+    start_time = time.time()
+    for _ in range(10):
+        has_gain_map(input_file)
+    end_time = time.time()
+    print(f"has_gain_map average time: {(end_time - start_time) / 10:.4f} seconds")
