@@ -129,6 +129,7 @@ cython_debug/
 *.gif
 *.tiff
 *.tif
+*.avif
 
 # Log files
 *.log
