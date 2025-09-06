@@ -19,8 +19,9 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
     target_path_avif = (target_dir / relative_path).with_suffix('.avif')
     target_path_webp = (target_dir / relative_path).with_suffix('.webp')
 
-    # Skip if target file already exists
-    if target_path_avif.exists() or target_path_webp.exists():
+    # Skip if target file already exists and has non-zero size
+    if (target_path_avif.exists() and target_path_avif.stat().st_size > 0) or \
+       (target_path_webp.exists() and target_path_webp.stat().st_size > 0):
         logging.info(f"Skipping already converted file: {filepath.name}")
         return
 
@@ -86,7 +87,7 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         success = run_command(cmd)
 
     if success:
-        logging.info(f"Successfully converted {filepath.name} to AVIF")
+        logging.debug(f"Successfully converted {filepath.name} to AVIF")
         copy_metadata(filepath, target_path_avif)
         if delete_original:
             filepath.unlink()
@@ -95,7 +96,7 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         logging.warning(f"AVIF conversion failed for {filepath.name}. Falling back to WebP.")
         cmd[-1] = str(target_path_webp) # Change output path
         if run_command(cmd):
-            logging.info(f"Successfully converted {filepath.name} to WebP")
+            logging.debug(f"Successfully converted {filepath.name} to WebP")
             copy_metadata(filepath, target_path_webp)
             if delete_original:
                 filepath.unlink()

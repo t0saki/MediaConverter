@@ -104,7 +104,7 @@ def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_arg
             target_path.unlink()
             return
             
-        logging.info(f"Successfully converted {filepath.name} to MP4")
+        logging.debug(f"Successfully converted {filepath.name} to MP4")
         copy_metadata(filepath, target_path)
         if delete_original:
             filepath.unlink()
