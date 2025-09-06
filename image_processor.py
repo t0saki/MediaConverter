@@ -28,17 +28,20 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
     target_path_avif.parent.mkdir(parents=True, exist_ok=True)
 
     # Get dimensions using ImageMagick's identify
-    cmd_identify = ['magick', 'identify', '-format', '%wx%h', str(filepath)]
-    identify_result = run_command(cmd_identify)
-    if not identify_result or not identify_result.stdout:
-        logging.error(
-            f"Could not get dimensions for {filepath} using identify")
-        return
+    try:
+        cmd_identify = ['magick', 'identify', '-format', '%wx%h', str(filepath)]
+        identify_result = run_command(cmd_identify)
+        if not identify_result or not identify_result.stdout:
+            raise ValueError(
+                f"Could not get dimensions for {filepath} using identify")
 
-    # The output format '%wx%h' is identical to the old ffprobe command,
-    # so the parsing logic remains the same.
-    width, height = map(int, identify_result.stdout.strip().split('x'))
-    resolution = width * height
+        # The output format '%wx%h' is identical to the old ffprobe command,
+        # so the parsing logic remains the same.
+        width, height = map(int, identify_result.stdout.strip().split('x'))
+        resolution = width * height
+    except ValueError:
+        logging.error(f"Error getting image dimensions for {filepath}.")
+        width, height, resolution = 0, 0, 0
 
     # Calculate resize filter if necessary
     resize_filter = []

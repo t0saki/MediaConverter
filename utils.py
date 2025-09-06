@@ -2,6 +2,7 @@ import logging
 import shutil
 import subprocess
 from pathlib import Path
+import traceback
 
 def setup_logging(log_file='conversion.log'):
     """Configures logging to both file and console."""
@@ -27,7 +28,7 @@ def check_dependencies():
         exit(1)
     logging.info("All required dependencies found.")
 
-def run_command(cmd: list[str]):
+def run_command(cmd: list[str], verbose: bool = True):
     """Runs an external command and logs errors."""
     try:
         process = subprocess.run(
@@ -35,10 +36,14 @@ def run_command(cmd: list[str]):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            encoding='utf-8',
+            errors='replace',
             check=True
         )
         return process
     except subprocess.CalledProcessError as e:
-        logging.error(f"Command failed: {' '.join(cmd)}")
-        logging.error(f"Stderr: {e.stderr.strip()}")
+        if verbose:
+            logging.error(f"Command failed: {' '.join(cmd)}")
+            logging.error(f"Stderr: {e.stderr.strip().encode('utf-8', errors='replace').decode('utf-8')}")
+            logging.error(f"Stack: {traceback.format_exc()}")
         return None

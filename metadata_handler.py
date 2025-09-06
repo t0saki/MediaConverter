@@ -12,9 +12,9 @@ MIN_VALID_DATE = datetime(2000, 1, 1)
 def _get_date_from_exif(source_path: Path) -> Optional[datetime]:
     """Tries to find the earliest date from EXIF tags."""
     try:
-        cmd = ['exiftool', '-j', '-DateTimeOriginal',
+        cmd = ['exiftool', '-charset', 'filename=UTF8', '-j', '-DateTimeOriginal',
                '-CreateDate', '-ModifyDate', str(source_path)]
-        proc = run_command(cmd)
+        proc = run_command(cmd, verbose=False)
         if not (proc and proc.stdout):
             return None
 
@@ -118,8 +118,10 @@ def copy_metadata(source_path: Path, target_path: Path):
         return
 
     # 1. Copy all existing tags from the source file
+    # 1. Copy all existing tags from the source file
+    # 1. Copy all existing tags from the source file
     cmd_copy_tags = [
-        'exiftool', '-TagsFromFile', str(source_path), '-all:all',
+        'exiftool', '-charset', 'filename=utf8', '-TagsFromFile', str(source_path), '-all:all',
         '--unsafe', '-overwrite_original', str(target_path)
     ]
     run_command(cmd_copy_tags)
