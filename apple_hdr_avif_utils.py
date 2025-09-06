@@ -95,10 +95,10 @@ def convert_apple_hdr_to_avif(
         hdr_image_pq = pq_eotf_inverse(hdr_image_linear)
 
         if target_width is not None and target_height is not None:
-            print(
-                f"Original dimensions: ({hdr_image_pq.shape[1]}, {hdr_image_pq.shape[0]})")
-            print(
-                f"Resizing image to {target_width}x{target_height} using LANCZOS filter...")
+            # print(
+            #     f"Original dimensions: ({hdr_image_pq.shape[1]}, {hdr_image_pq.shape[0]})")
+            # print(
+            #     f"Resizing image to {target_width}x{target_height} using LANCZOS filter...")
 
             # Use cv2.resize directly on the float32 NumPy array.
             # cv2.INTER_LANCZOS4 is the equivalent high-quality resampling method.

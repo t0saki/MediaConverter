@@ -21,14 +21,17 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
 
     target_path_avif.parent.mkdir(parents=True, exist_ok=True)
 
-    # Get dimensions using ffprobe (universal for images/videos)
-    cmd_probe = ['ffprobe', '-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=s=x:p=0', str(filepath)]
-    probe_result = run_command(cmd_probe)
-    if not probe_result or not probe_result.stdout:
-        logging.error(f"Could not get dimensions for {filepath}")
+    # Get dimensions using ImageMagick's identify
+    cmd_identify = ['identify', '-format', '%wx%h', str(filepath)]
+    identify_result = run_command(cmd_identify)
+    if not identify_result or not identify_result.stdout:
+        logging.error(
+            f"Could not get dimensions for {filepath} using identify")
         return
-    
-    width, height = map(int, probe_result.stdout.strip().split('x'))
+
+    # The output format '%wx%h' is identical to the old ffprobe command,
+    # so the parsing logic remains the same.
+    width, height = map(int, identify_result.stdout.strip().split('x'))
     resolution = width * height
 
     # Calculate resize filter if necessary
