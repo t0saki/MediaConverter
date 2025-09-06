@@ -1,5 +1,7 @@
 # Media Converter
 
+[中文 README](README_zh.md)
+
 A comprehensive Python tool for converting and compressing images and videos to modern formats with metadata preservation.
 
 ## Features
