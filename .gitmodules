@@ -1,0 +1,3 @@
+[submodule "hdr-conversion"]
+	path = hdr-conversion
+	url = https://github.com/Jackchou00/hdr-conversion.git
