@@ -3,8 +3,15 @@ from math import sqrt, floor
 from pathlib import Path
 from utils import run_command
 from metadata_handler import copy_metadata
-from hdr_conversion.apple_heic.identify import has_gain_map
-from apple_hdr_avif_utils import convert_apple_hdr_to_avif
+
+try:
+    from apple_hdr_avif_utils import convert_apple_hdr_to_avif, has_gain_map
+except ImportError:
+    logging.warning("apple_hdr_avif_utils import error. Apple HDR conversion will be disabled. Please ensure all dependencies of hdr_conversion are installed.")
+    def convert_apple_hdr_to_avif(*args, **kwargs):
+        return False
+    def has_gain_map(*args, **kwargs):
+        return False
 
 def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool, speed_preset: int, keep_apple_hdr: bool = False):
     """Converts a single image to AVIF with a fallback to WebP."""
