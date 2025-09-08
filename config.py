@@ -15,3 +15,7 @@ DEFAULT_VIDEO_SPEED_PRESET = 6
 
 # Default maximum resolution (4032 * 3024 = 12.2MP)
 DEFAULT_MAX_RESOLUTION = 4032 * 3024
+
+# Live Photo CRF offset - when processing .MOV files that are part of Live Photos (paired with .HEIC files)
+# The CRF value will be increased by this offset to reduce quality and file size for Live Photo videos
+LIVE_PHOTO_CRF_OFFSET = 10

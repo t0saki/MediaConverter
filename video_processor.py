@@ -5,6 +5,7 @@ from math import sqrt, floor
 from pathlib import Path
 from utils import run_command
 from metadata_handler import copy_metadata
+from config import LIVE_PHOTO_CRF_OFFSET
 
 
 def _get_video_info(filepath: Path) -> dict:
@@ -54,6 +55,25 @@ def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_arg
     if not source_info:
         logging.error(f"Could not read video metadata for {filepath}")
         return
+
+    # region New Logic for Live Photos
+    # If the source file is a .MOV and there is a .HEIC file in the same directory, it is considered a video attached to a live photo, and CRF + 10
+    if filepath.suffix == '.MOV':
+        heic_path = filepath.with_suffix('.HEIC')
+        if heic_path.exists():
+            logging.debug(
+                f"Live Photo's MOV file detected: {filepath.name}. Adjusting CRF.")
+            crf_match = re.search(r'-crf (\d+)', ffmpeg_args)
+            if crf_match:
+                original_crf = int(crf_match.group(1))
+                new_crf = original_crf + LIVE_PHOTO_CRF_OFFSET
+                ffmpeg_args = re.sub(
+                    r'-crf \d+', f'-crf {new_crf}', ffmpeg_args)
+                logging.debug(f"CRF adjusted from {original_crf} to {new_crf} (offset: {LIVE_PHOTO_CRF_OFFSET}).")
+            else:
+                logging.warning(
+                    f"'-crf' setting not found in ffmpeg_args for Live Photo: {filepath.name}. Cannot adjust CRF.")
+    # endregion
 
     scale_filter = []
 
