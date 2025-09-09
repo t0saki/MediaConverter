@@ -47,3 +47,8 @@ def run_command(cmd: list[str], verbose: bool = True):
             logging.error(f"Stderr: {e.stderr.strip().encode('utf-8', errors='replace').decode('utf-8')}")
             logging.error(f"Stack: {traceback.format_exc()}")
         return None
+    
+    
+# If the source file is a .MOV and there is a .HEIC file in the same directory, it is considered a video attached to a live photo, and CRF + 10
+def is_live_photo_mov(file: Path) -> bool:
+    return file.suffix.lower() == '.mov' and (file.with_suffix('.heic')).exists()
