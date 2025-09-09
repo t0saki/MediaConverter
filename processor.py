@@ -7,7 +7,7 @@ from config import IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
 from image_processor import process_image
 from video_processor import process_video
 
-def process_media(source_dir: str, target_dir: str, quality: int, max_res: int, video_args: str, max_workers: int, delete_original: bool, skip_existing: bool, image_speed: int, video_speed: int, keep_apple_hdr: bool = False):
+def process_media(source_dir: str, target_dir: str, quality: int, max_image_res: int, max_video_res: int, max_framerate: int, video_args: str, max_workers: int, delete_original: bool, skip_existing: bool, image_speed: int, video_speed: int, keep_apple_hdr: bool = False):
     """Finds and converts all media files in the source directory."""
     source_path = Path(source_dir)
     target_path = Path(target_dir)
@@ -25,8 +25,8 @@ def process_media(source_dir: str, target_dir: str, quality: int, max_res: int, 
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create partial functions with fixed arguments for mapping
-        image_task = partial(process_image, source_dir=source_path, target_dir=target_path, quality=quality, max_res=max_res, delete_original=delete_original, speed_preset=image_speed, keep_apple_hdr=keep_apple_hdr)
-        video_task = partial(process_video, source_dir=source_path, target_dir=target_path, ffmpeg_args=video_args, max_res=max_res, delete_original=delete_original, speed_preset=video_speed)
+        image_task = partial(process_image, source_dir=source_path, target_dir=target_path, quality=quality, max_res=max_image_res, delete_original=delete_original, speed_preset=image_speed, keep_apple_hdr=keep_apple_hdr)
+        video_task = partial(process_video, source_dir=source_path, target_dir=target_path, ffmpeg_args=video_args, max_res=max_video_res, delete_original=delete_original, speed_preset=video_speed, max_framerate=max_framerate)
         
         # Process images with a progress bar
         if image_files:

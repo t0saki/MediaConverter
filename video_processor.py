@@ -9,7 +9,7 @@ from config import LIVE_PHOTO_CRF_OFFSET
 
 
 def _get_video_info(filepath: Path) -> dict:
-    """Gets video duration, width, height, and rotation using ffprobe."""
+    """Gets video duration, width, height, rotation, and framerate using ffprobe."""
     cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json',
            '-show_format', '-show_streams', str(filepath)]
     result = run_command(cmd)
@@ -26,21 +26,35 @@ def _get_video_info(filepath: Path) -> dict:
             logging.warning(f"No video stream found in {filepath}")
             return {}
 
-        # 新增：获取旋转角度，如果标签不存在则默认为0
+        # 获取旋转角度，如果标签不存在则默认为0
         rotation = int(video_stream.get('tags', {}).get('rotate', '0'))
+        
+        # 新增：获取帧率
+        framerate = 0.0
+        framerate_str = video_stream.get('avg_frame_rate', '0/1')
+        if '/' in framerate_str:
+            num, den = map(int, framerate_str.split('/'))
+            if den != 0:
+                framerate = num / den
+        else:
+            try:
+                framerate = float(framerate_str)
+            except ValueError:
+                pass
 
         return {
             'duration': float(data.get('format', {}).get('duration', 0)),
             'width': int(video_stream.get('width', 0)),
             'height': int(video_stream.get('height', 0)),
-            'rotation': rotation  # 新增：返回旋转角度
+            'rotation': rotation,
+            'framerate': framerate  # 新增：返回帧率
         }
     except (json.JSONDecodeError, KeyError, StopIteration) as e:
         logging.error(f"Error parsing ffprobe output for {filepath}: {e}")
         return {}
 
 
-def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_args: str, max_res: int, delete_original: bool, speed_preset: int):
+def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_args: str, max_res: int, delete_original: bool, speed_preset: int, max_framerate: int):
     """Converts a single video file, correctly handling rotation."""
     relative_path = filepath.relative_to(source_dir)
     target_path = (target_dir / relative_path).with_suffix('.mp4')
@@ -73,24 +87,34 @@ def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_arg
                 f"'-crf' setting not found in ffmpeg_args for Live Photo: {filepath.name}. Cannot adjust CRF.")
     # endregion
 
-    scale_filter = []
+    video_filters = []
 
-    # 修改：根据旋转元数据调整宽高
+    # 根据旋转元数据调整宽高
     width = source_info['width']
     height = source_info['height']
     rotation = source_info.get('rotation', 0)
 
     # 如果视频旋转了90或270度，交换宽高以进行正确计算
-    if abs(rotation) == 90:
+    if abs(rotation) in [90, 270]:
         width, height = height, width
 
+    # --- 分辨率缩放逻辑 ---
     resolution = width * height
     if max_res and resolution > max_res:
         scale_factor = sqrt(max_res / resolution)
-        # 使用调整后的宽高进行缩放计算
         target_width = floor(width * scale_factor / 2) * 2
         target_height = floor(height * scale_factor / 2) * 2
-        scale_filter = ['-vf', f'scale={target_width}:{target_height}']
+        video_filters.append(f'scale={target_width}:{target_height}')
+        
+    # --- 帧率限制逻辑 ---
+    source_framerate = source_info.get('framerate', 0)
+    if max_framerate > 0 and source_framerate > (max_framerate + 3):
+        logging.debug(f"限制帧率：{filepath.name} 从 {source_framerate:.2f}fps 限制到 {max_framerate}fps")
+        video_filters.append(f'fps=fps={max_framerate}')
+        
+    filter_args = []
+    if video_filters:
+        filter_args = ['-vf', ','.join(video_filters)]
 
     # 如果ffmpeg参数中包含 -metadata:s:v rotate，则将其移除，因为转换后不再需要
     ffmpeg_args_list = ffmpeg_args.split()
@@ -109,7 +133,7 @@ def process_video(filepath: Path, source_dir: Path, target_dir: Path, ffmpeg_arg
     cmd = [
         'ffmpeg', '-y', '-noautorotate', '-i', str(filepath),
         *ffmpeg_args_updated.split(),
-        *scale_filter,
+        *filter_args,
         str(target_path)
     ]
 

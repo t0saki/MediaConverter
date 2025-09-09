@@ -10,7 +10,8 @@ A comprehensive Python tool for converting and compressing images and videos to 
 - **Video Conversion**: Convert videos to AV1/Opus format (MP4 container)
 - **Metadata Preservation**: Copy EXIF data and file timestamps
 - **Apple HDR Support**: Convert Apple HDR HEIC files to PQ format
-- **Smart Resizing**: Automatically resize media that exceeds maximum resolution
+- **Smart Resizing**: Automatically resize media that exceeds maximum resolution limits (separate for images and videos)
+- **Frame Rate Limiting**: Optionally limit video frame rates for consistency and size reduction
 - **Parallel Processing**: Multi-threaded conversion for faster processing
 - **Error Handling**: Robust error handling with fallback mechanisms
 
@@ -61,7 +62,9 @@ python main.py "/path/to/source" "/path/to/target"
 ```bash
 python main.py "D:\MyPictures" "D:\ConvertedMedia" \
   --quality 60 \
-  --max-resolution 1920*1080 \
+  --max-image-resolution 4032*3024 \
+  --max-video-resolution 1920*1080 \
+  --max-framerate 60 \
   --max-workers 8 \
   --delete-original \
   --log-file conversion.log
@@ -74,7 +77,9 @@ python main.py "D:\MyPictures" "D:\ConvertedMedia" \
 | `source_dir` | Source directory containing media files | Required |
 | `target_dir` | Target directory for converted files | Required |
 | `-q, --quality` | Image quality (0-100, lower = smaller) | 75 |
-| `-r, --max-resolution` | Max pixels (width*height) before resizing | 4032*3024 |
+| `--max-image-resolution` | Max image pixels (width*height) before resizing | 4032*3024 |
+| `--max-video-resolution` | Max video pixels (width*height) before resizing | 1920*1080 |
+| `--max-framerate`| Max video frame rate (limiter applied if source > limit+3) | 60 |
 | `--video-args` | Custom FFmpeg arguments for video | AV1/Opus preset |
 | `--image-speed` | Speed preset for image conversion (0-10, lower is slower but better quality) | 6 |
 | `--video-speed` | Speed preset for video conversion (0-13, lower is slower but better quality) | 4 |
@@ -105,9 +110,9 @@ media_converter/
 python main.py "~/Photos" "~/PhotosConverted" --quality 85
 ```
 
-### Convert and resize large videos
+### Convert and resize large videos to FullHD 30fps
 ```bash
-python main.py "~/Videos" "~/VideosConverted" --max-resolution 1280*720
+python main.py "~/Videos" "~/VideosConverted" --max-video-resolution 1280*720 --max-framerate 30
 ```
 
 ### Batch convert with maximum parallelism

@@ -10,7 +10,8 @@
 - **视频转换**: 将视频转换为AV1/Opus格式（MP4容器）
 - **元数据保留**: 复制EXIF数据和文件时间戳
 - **Apple HDR支持**: 将Apple HDR HEIC文件转换为PQ格式
-- **智能调整大小**: 自动调整超过最大分辨率的媒体文件
+- **智能调整大小**: 自动调整超过最大分辨率限制的媒体文件（图像和视频分别设置）
+- **帧率限制**: 可选择性地限制视频帧率以获得一致性和减小文件大小
 - **并行处理**: 多线程转换，提高处理速度
 - **错误处理**: 强大的错误处理机制和回退策略
 
@@ -61,7 +62,9 @@ python main.py "/源文件路径" "/目标文件路径"
 ```bash
 python main.py "D:\我的图片" "D:\转换后媒体" \
   --quality 60 \
-  --max-resolution 1920*1080 \
+  --max-image-resolution 4032*3024 \
+  --max-video-resolution 1920*1080 \
+  --max-framerate 60 \
   --max-workers 8 \
   --delete-original \
   --log-file 转换日志.log
@@ -74,7 +77,9 @@ python main.py "D:\我的图片" "D:\转换后媒体" \
 | `source_dir` | 包含媒体文件的源目录 | 必填 |
 | `target_dir` | 转换后文件的目标目录 | 必填 |
 | `-q, --quality` | 图像质量 (0-100, 值越小文件越小) | 75 |
-| `-r, --max-resolution` | 调整大小前的最大像素数 (宽*高) | 4032*3024 |
+| `--max-image-resolution` | 调整大小前的最大图像像素数 (宽*高) | 4032*3024 |
+| `--max-video-resolution` | 调整大小前的最大视频像素数 (宽*高) | 1920*1080 |
+| `--max-framerate`| 最大视频帧率 (当源帧率 > 限制+3时应用限制器) | 60 |
 | `--video-args` | 视频转换的自定义FFmpeg参数 | AV1/Opus预设 |
 | `--image-speed` | 图像转换速度预设 (0-10, 值越小速度越慢但质量越好) | 6 |
 | `--video-speed` | 视频转换速度预设 (0-13, 值越小速度越慢但质量越好) | 4 |
@@ -105,9 +110,9 @@ media_converter/
 python main.py "~/照片" "~/转换后照片" --quality 85
 ```
 
-### 转换并调整大视频尺寸
+### 转换并调整大视频尺寸到全高清30fps
 ```bash
-python main.py "~/视频" "~/转换后视频" --max-resolution 1280*720
+python main.py "~/视频" "~/转换后视频" --max-video-resolution 1280*720 --max-framerate 30
 ```
 
 ### 批量转换并使用最大并行度
