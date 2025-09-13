@@ -26,14 +26,17 @@ def process_media(source_dir: str, target_dir: str, quality: int, max_image_res:
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create partial functions with fixed arguments for mapping
         image_task = partial(process_image, source_dir=source_path, target_dir=target_path, quality=quality, max_res=max_image_res, delete_original=delete_original, speed_preset=image_speed, keep_apple_hdr=keep_apple_hdr)
-        video_task = partial(process_video, source_dir=source_path, target_dir=target_path, ffmpeg_args=video_args, max_res=max_video_res, delete_original=delete_original, speed_preset=video_speed, max_framerate=max_framerate)
+        # video_task = partial(process_video, source_dir=source_path, target_dir=target_path, ffmpeg_args=video_args, max_res=max_video_res, delete_original=delete_original, speed_preset=video_speed, max_framerate=max_framerate)
         
         # Process images with a progress bar
         if image_files:
             list(tqdm(executor.map(image_task, image_files), total=len(image_files), desc="Converting Images"))
         
-        # Process videos with a progress bar
-        if video_files:
-            list(tqdm(executor.map(video_task, video_files), total=len(video_files), desc="Converting Videos"))
+        # # Process videos with a progress bar
+        # if video_files:
+        #     list(tqdm(executor.map(video_task, video_files), total=len(video_files), desc="Converting Videos"))
+    if video_files:
+        for video_file in tqdm(video_files, desc="Converting Videos"):
+            process_video(video_file, source_dir=source_path, target_dir=target_path, ffmpeg_args=video_args, max_res=max_video_res, delete_original=delete_original, speed_preset=video_speed, max_framerate=max_framerate)
 
     logging.info("All tasks completed.")
