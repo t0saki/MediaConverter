@@ -1,58 +1,46 @@
 import numpy as np
-from PIL import Image
-import pillow_heif
 import cv2
+import colour
 import traceback
-from hdr_conversion.utils import pq_eotf_inverse
-from hdr_conversion.apple_heic.color_conversion import apply_gain_map
-from hdr_conversion.apple_heic.get_images import read_base_and_gain_map
-from hdr_conversion.apple_heic.headroom import get_headroom
-from hdr_conversion.apple_heic.identify import has_gain_map
+from imagecodecs import avif_encode
+
+import hdrconv.io as hdr_io
+import hdrconv.convert as hdr_convert
+from hdrconv.identify import has_gain_map
 
 
-"""
-Note: pillow_heif no longer supports AVIF after version 0.22.0 since pillow already supports AVIF natively.
-
-Need to transfer the AVIF saving functionality to use pillow's native support for AVIF.
-"""
-
-
-# Save HDR image
 def save_np_array_to_avif(
-    np_array, output_path, color_primaries=12, transfer_characteristics=16, speed_preset=1
+    np_array, output_path, quality=75, color_primaries=12, transfer_characteristics=16, speed_preset=1
 ):
     """
-    Convert a numpy array to a HEIF/AVIF image and save it to the specified output path.
+    Encode a PQ-encoded numpy array to AVIF and save to disk.
 
-    :param np_array: The input numpy array representing the image.
+    Uses imagecodecs (libaom) for encoding with 10-bit depth.
+
+    :param np_array: The input numpy array representing the image, range [0, 1].
     :param output_path: The path where the output image will be saved.
+    :param quality: Image quality (0-100), higher means better quality but larger file size.
     :param color_primaries: Specifies the color primaries for the image.
                            - 1 for BT.709, 9 for BT.2020, 12 for P3-D65
     :param transfer_characteristics: Specifies the transfer characteristics for the image.
                                      - 1 for BT.709, 8 for Linear, 16 for PQ, 18 for HLG
+    :param speed_preset: Encoding speed (0-10, lower is slower but better quality).
     """
-    # Normalize the numpy array to the range [0, 1] and then scale it to [0, 65535]
     np_array = np.clip(np_array, 0, 1)
-    np_array = np_array * 65535
-    np_array = np_array.astype(np.uint16)
+    np_array = (np_array * 1023.0).astype(np.uint16)
 
-    # Create a HEIF image from the numpy array
-    img = pillow_heif.from_bytes(
-        mode="RGB;16",
-        size=(np_array.shape[1], np_array.shape[0]),
-        data=np_array.tobytes(),
+    avif_bytes: bytes = avif_encode(
+        np_array,
+        level=quality,
+        speed=speed_preset,
+        bitspersample=10,
+        primaries=color_primaries,
+        transfer=transfer_characteristics,
+        numthreads=-1,
     )
 
-    # Define the save parameters
-    kwargs = {
-        "format": "AVIF",
-        "color_primaries": color_primaries,
-        "transfer_characteristics": transfer_characteristics,
-        "enc_params": {"aom:cpu-used": speed_preset, "aom:row-mt": 1},
-    }
-
-    # Save the image to the specified output path
-    img.save(output_path, **kwargs)
+    with open(output_path, "wb") as f:
+        f.write(avif_bytes)
 
 
 def convert_apple_hdr_to_avif(
@@ -65,55 +53,47 @@ def convert_apple_hdr_to_avif(
 ):
     """
     Convert Apple HDR HEIC image to AVIF format with HDR support, with optional resizing.
-    
+
     Args:
         input_path: Path to the input Apple HDR HEIC file.
         output_path: Path where the output AVIF file will be saved.
         quality: Image quality (0-100), higher means better quality but larger file size.
         target_width: The target width for the output image. If specified, requires target_height.
         target_height: The target height for the output image. If specified, requires target_width.
-    
+        speed_preset: Encoding speed (0-10, lower is slower but better quality).
+
     Returns:
         bool: True if conversion was successful, False otherwise.
     """
     try:
-        pillow_heif.options.QUALITY = quality
-        # Read base image and gain map from Apple HDR HEIC
-        base_image, gain_map = read_base_and_gain_map(input_path)
-        headroom = get_headroom(input_path)
+        # Read Apple HDR HEIC (base + gain map + headroom)
+        heic_data = hdr_io.read_apple_heic(input_path)
 
-        if base_image is None or gain_map is None or headroom is None:
-            print(
-                f"Failed to retrieve necessary image data or metadata from {input_path}")
-            return False
+        # Reconstruct linear HDR in Display P3 color space
+        hdr = hdr_convert.apple_heic_to_hdr(heic_data)
+        hdr_linear = hdr["data"]
 
-        # Apply gain map to reconstruct HDR image
-        hdr_image_linear = apply_gain_map(base_image, gain_map, headroom)
+        # Apply PQ transfer function (203 nits reference white)
+        hdr_linear = np.clip(hdr_linear, 0.0, np.inf)
+        hdr_pq = colour.eotf_inverse(
+            hdr_linear * 203.0,
+            function="ITU-R BT.2100 PQ"
+        )
+        hdr_pq = np.clip(hdr_pq, 0.0, 1.0).astype(np.float32)
 
-        # Scale and convert to PQ space
-        hdr_image_linear = hdr_image_linear * 203.0
-        hdr_image_pq = pq_eotf_inverse(hdr_image_linear)
-
+        # Resize if needed (in PQ space, using LANCZOS4 for high quality)
         if target_width is not None and target_height is not None:
-            # print(
-            #     f"Original dimensions: ({hdr_image_pq.shape[1]}, {hdr_image_pq.shape[0]})")
-            # print(
-            #     f"Resizing image to {target_width}x{target_height} using LANCZOS filter...")
-
-            # Use cv2.resize directly on the float32 NumPy array.
-            # cv2.INTER_LANCZOS4 is the equivalent high-quality resampling method.
-            hdr_image_pq = cv2.resize(
-                hdr_image_pq,
+            hdr_pq = cv2.resize(
+                hdr_pq,
                 (target_width, target_height),
                 interpolation=cv2.INTER_LANCZOS4
             )
 
-        # print(
-        #     f"hdr pq np info: shape={hdr_image_pq.shape}, dtype={hdr_image_pq.dtype}, min={np.min(hdr_image_pq)}, max={np.max(hdr_image_pq)}")
         # Save as AVIF with HDR metadata
         save_np_array_to_avif(
-            hdr_image_pq,
+            hdr_pq,
             output_path,
+            quality=quality,
             color_primaries=12,  # P3-D65
             transfer_characteristics=16,  # PQ
             speed_preset=speed_preset
