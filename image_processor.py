@@ -13,6 +13,20 @@ except ImportError:
     def has_gain_map(*args, **kwargs):
         return False
 
+try:
+    from jpeg_gainmap import convert_jpeg_gainmap_to_avif, has_jpeg_gain_map, strip_stale_hdr_tags
+except ImportError:
+    logging.warning("jpeg_gainmap import error. Gain-map JPEG HDR conversion will be disabled.")
+    def convert_jpeg_gainmap_to_avif(*args, **kwargs):
+        return False
+    def has_jpeg_gain_map(*args, **kwargs):
+        return False
+    def strip_stale_hdr_tags(*args, **kwargs):
+        return None
+
+HEIC_EXTENSIONS = ('.heic', '.heif')
+JPEG_EXTENSIONS = ('.jpg', '.jpeg')
+
 def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: int, max_res: int, delete_original: bool, speed_preset: int, keep_apple_hdr: bool = False):
     """Converts a single image to AVIF with a fallback to WebP."""
     relative_path = filepath.relative_to(source_dir)
@@ -54,14 +68,21 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         target_width, target_height = None, None
 
     success = False
+    suffix = filepath.suffix.lower()
 
-    # Try Apple HDR conversion if enabled and file has gain map
-    if keep_apple_hdr and filepath.suffix.lower() in ['.heic', '.heif']:
+    # A gain-map JPEG (Lightroom / Ultra HDR) needs its own reader — neither ImageMagick nor
+    # Pillow decodes the second MPF image, so without this the file silently comes out SDR.
+    # Tracked separately from `success` because the stale HDR XMP has to be stripped even when
+    # the HDR encode fails and the SDR fallback below produces the output.
+    source_has_gain_map = False
+
+    # Try HDR conversion if enabled and the file actually carries a gain map
+    if keep_apple_hdr and suffix in HEIC_EXTENSIONS:
         try:
             logging.debug(f"Checking for Apple HDR gain map in {filepath.name}")
             if has_gain_map(str(filepath)):
                 logging.debug(f"Apple HDR gain map found in {filepath.name}, attempting HDR conversion")
-                
+
                 # Attempt Apple HDR to AVIF conversion
                 success = convert_apple_hdr_to_avif(
                     input_path=str(filepath),
@@ -73,6 +94,24 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
                 )
         except Exception as e:
             logging.warning(f"Error during Apple HDR conversion for {filepath.name}: {e}")
+            success = False
+    elif keep_apple_hdr and suffix in JPEG_EXTENSIONS:
+        try:
+            logging.debug(f"Checking for a gain map in {filepath.name}")
+            if has_jpeg_gain_map(str(filepath)):
+                source_has_gain_map = True
+                logging.debug(f"Gain map found in {filepath.name}, attempting HDR conversion")
+
+                success = convert_jpeg_gainmap_to_avif(
+                    input_path=str(filepath),
+                    output_path=str(target_path_avif),
+                    quality=quality,
+                    target_width=target_width,
+                    target_height=target_height,
+                    speed_preset=speed_preset
+                )
+        except Exception as e:
+            logging.warning(f"Error during gain-map JPEG HDR conversion for {filepath.name}: {e}")
             success = False
 
     if not success:
@@ -92,6 +131,8 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
     if success:
         logging.debug(f"Successfully converted {filepath.name} to AVIF")
         copy_metadata(filepath, target_path_avif)
+        if source_has_gain_map:
+            strip_stale_hdr_tags(target_path_avif)
         if delete_original:
             filepath.unlink()
     else:
@@ -101,6 +142,8 @@ def process_image(filepath: Path, source_dir: Path, target_dir: Path, quality: i
         if run_command(cmd):
             logging.debug(f"Successfully converted {filepath.name} to WebP")
             copy_metadata(filepath, target_path_webp)
+            if source_has_gain_map:
+                strip_stale_hdr_tags(target_path_webp)
             if delete_original:
                 filepath.unlink()
         else:

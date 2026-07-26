@@ -30,6 +30,11 @@ def _get_date_from_exif(source_path: Path) -> Optional[datetime]:
                 # e.g., '2023:09:15 10:30:00+08:00' or '2023:09:15 10:30:00'
                 if '+' in ds or '-' in ds[11:]:
                     dt = datetime.strptime(ds, '%Y:%m:%d %H:%M:%S%z')
+                    # EXIF dates are naive wall-clock while XMP ones carry an offset; mixing the
+                    # two makes min() raise TypeError, which used to be swallowed below and drop
+                    # the file all the way back to its mtime. Compare wall-clock across the board
+                    # — every tag here comes from the same camera in the same local zone anyway.
+                    dt = dt.replace(tzinfo=None)
                 else:
                     dt = datetime.strptime(ds, '%Y:%m:%d %H:%M:%S')
                 timestamps.append(dt)

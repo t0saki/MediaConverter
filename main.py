@@ -36,7 +36,7 @@ def main():
     parser.add_argument("-w", "--max-workers", type=int, default=4, help="Maximum number of parallel threads.")
     parser.add_argument("--delete-original", action="store_true", help="Delete original files after successful conversion.")
     parser.add_argument("--skip-existing", action="store_true", default=True, help="Skip files that already exist in the target directory.")
-    parser.add_argument("--keep-apple-hdr", action="store_true", help="Preserve Apple HDR metadata when converting HEIC files with gain maps.")
+    parser.add_argument("--keep-apple-hdr", action="store_true", help="Preserve HDR when converting files with gain maps (Apple HEIC, or gain-map/Ultra HDR JPEG) — output is a 10-bit PQ AVIF.")
     
     parser.add_argument("--log-file", type=str, default="conversion.log", help="Path to the log file.")
 
